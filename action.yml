@@ -1,5 +1,5 @@
-name: 'Hello World'
-description: 'Greet someone'
+name: 'Maven Builder'
+description: 'Build and upload artifacts with maven'
 inputs:
   java_version:
     description: Java runtime version
