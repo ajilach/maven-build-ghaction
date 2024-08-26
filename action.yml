@@ -1,35 +1,153 @@
 name: 'Hello World'
 description: 'Greet someone'
 inputs:
-  who-to-greet:  # id of input
-    description: 'Who to greet'
-    required: true
-    default: 'World'
+  java_version:
+    description: Java runtime version
+    required: false
+    default: "8"
+  maven_version:
+    description: Maven version
+    required: false
+    default: "3.6.3"
+  additional_profiles:
+    description: "Additional mvn profiles to be executed in the mvn command (for example: 'jboss' or 'jboss,test')"
+    required: false
+  slack_channel_id:
+      description: Slack channel ID for notifications
+      required: true
 outputs:
-  random-number:
-    description: "Random number"
-    value: ${{ steps.random-number-generator.outputs.random-number }}
+  build_version: 
+    description: "Build version from POM"
+    value: ${{ steps.pom-vars.outputs.build_version }}
+  artefact_id: 
+    description: "Artifact id from POM"
+    value: ${{ steps.pom-vars.outputs.artefact_id }}
 runs:
   using: "composite"
+  
   steps:
-    - name: Set Greeting
-      run: echo "Hello $INPUT_WHO_TO_GREET."
-      shell: bash
+    
+    - name: Set up JDK ${{ inputs.java_version }}
+      uses: actions/setup-java@v4.2.2
+      with:
+        java-version: ${{ inputs.java_version }}
+        distribution: 'temurin'
+        cache: maven
+    
+    - name: Set up Maven
+      uses: stCarolas/setup-maven@v5
+      with:
+        maven-version: ${{ inputs.maven_version }}
+    
+    - name: Load Repo Secrets
+      id: op-load-repo-secrets
+      uses: 1password/load-secrets-action@v2.0.0
       env:
-        INPUT_WHO_TO_GREET: ${{ inputs.who-to-greet }}
+        OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+        NEXUSUSER: op://ajila_CICD/NEXUS/username
+        NEXUSPWD: op://ajila_CICD/NEXUS/password
+    
+    - name: Prepare maven config file
+      uses: whelk-io/maven-settings-xml-action@v22
+      with:
+        repositories: >
+          [
+            {
+              "id": "central",
+              "url": "http://central",
+              "releases": {
+                "enabled": "true"
+              },
+              "snapshots": {
+                "enabled": "true"
+              }
+            }
+          ]
+        plugin_repositories: >
+          [
+            {
+              "id": "central",
+              "url": "http://central",
+              "releases": {
+                "enabled": "true"
+              },
+              "snapshots": {
+                "enabled": "true"
+              }
+            }
+          ]
+        servers: >
+          [
+            {
+              "id": "AjilaSnapshots",
+              "username": "${{ env.NEXUSUSER }}",
+              "password": "${{ env.NEXUSPWD }}"
+            },
+            {
+              "id": "AjilaReleases",
+              "username": "${{ env.NEXUSUSER }}",
+              "password": "${{ env.NEXUSPWD }}"
+            }
+          ]
+        mirrors: >
+          [
+            {
+              "id": "nexus",
+              "mirrorOf": "*",
+              "url": "http://nexus.internal.ajila.com/repository/public/"
+            }
+          ]
+        profiles: >
+          [
+            {
+              "id": "nexus"
+            }
+          ]
+        active_profiles: >
+          [
+            "nexus"
+          ]
+        output_file: .m2/settings.xml
 
-    - name: Random Number Generator
-      id: random-number-generator
-      run: echo "random-number=$(echo $RANDOM)" >> $GITHUB_OUTPUT
+    - name: Set output variables
+      id: pom-vars
       shell: bash
+      run: |
+        echo "build_version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -Pnexus --global-settings .m2/settings.xml)" >> $GITHUB_OUTPUT
+        echo "artefact_id=$(mvn help:evaluate -Dexpression=project.artifactId -q -DforceStdout -Pnexus --global-settings .m2/settings.xml)" >> $GITHUB_OUTPUT    
 
-    - name: Set GitHub Path
-      run: echo "$GITHUB_ACTION_PATH" >> $GITHUB_PATH
+    - name: Build and upload to nexus
       shell: bash
+      run: |
+        PROFILES="nexus"
+        if [[ -n "$ADDITIONAL_PROFILES" ]]; then
+          PROFILES="$PROFILES,$ADDITIONAL_PROFILES"
+        fi
+        mvn --global-settings .m2/settings.xml --batch-mode -P$PROFILES clean deploy
       env:
-        GITHUB_ACTION_PATH: ${{ github.action_path }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        ADDITIONAL_PROFILES: ${{ inputs.additional_profiles }}
 
-    - name: Run goodbye.sh
-      run: goodbye.sh
-      shell: bash
+    - name: Upload Artifact to GitHub
+      uses: actions/upload-artifact@v4.3.6
+      with:
+        name: maven-artifacts
+        path: "**/target/*.zip"
 
+    - name: Maven Dependency Tree Dependency Submission
+      uses: advanced-security/maven-dependency-submission-action@v4.1.1
+      with:
+        settings-file: .m2/settings.xml
+
+    - name: Clean-up GH runner disk space
+      if: always()
+      uses: ajilach/gh-actions-cleanup@v1.1.0
+
+    - name: Notify job status
+      if: always()
+      uses: ajilach/notifications-ghaction@v1.4.1
+      with:
+        op_service_account_token: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+        slack_channel_id: ${{ inputs.slack_channel_id }}
+        job_status: ${{ job.status }}
+  
