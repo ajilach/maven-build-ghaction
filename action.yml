@@ -141,7 +141,7 @@ runs:
 
     - name: Clean-up GH runner disk space
       if: always()
-      uses: ajilach/actions-cleanup-ghaction@v1.2.0
+      uses: ajilach/actions-cleanup-ghaction@v1.2.1
 
     - name: Notify job status
       if: always()
