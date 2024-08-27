@@ -22,6 +22,9 @@ outputs:
   artefact_id: 
     description: "Artifact id from POM"
     value: ${{ steps.pom-vars.outputs.artefact_id }}
+  group_id:
+    description: "Group id from POM"
+    value: ${{ steps.pom-vars.outputs.group_id }}
 runs:
   using: "composite"
   
@@ -114,7 +117,8 @@ runs:
       shell: bash
       run: |
         echo "build_version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -Pnexus --global-settings .m2/settings.xml)" >> $GITHUB_OUTPUT
-        echo "artefact_id=$(mvn help:evaluate -Dexpression=project.artifactId -q -DforceStdout -Pnexus --global-settings .m2/settings.xml)" >> $GITHUB_OUTPUT    
+        echo "artefact_id=$(mvn help:evaluate -Dexpression=project.artifactId -q -DforceStdout -Pnexus --global-settings .m2/settings.xml)" >> $GITHUB_OUTPUT
+        echo "group_id=$(mvn help:evaluate -Dexpression=project.groupId -q -DforceStdout -Pnexus --global-settings .m2/settings.xml)" >> $GITHUB_OUTPUT 
 
     - name: Build and upload to nexus
       shell: bash
