@@ -34,7 +34,7 @@ jobs:
 
       - name: Building the maven artifacts
         id: builder
-        uses: ajilach/maven-build-ghaction@v1.0.0
+        uses: ajilach/maven-build-ghaction@v1.1.0
         with:
           java_version: '8'
           maven_version: '3.6.3'
