@@ -13,8 +13,11 @@ inputs:
     description: "Additional mvn profiles to be executed in the mvn command (for example: 'jboss' or 'jboss,test')"
     required: false
   slack_channel_id:
-      description: Slack channel ID for notifications
-      required: true
+    description: Slack channel id for notifications
+    required: true
+  op_service_account_token:
+    description: 1Password service account token
+    required: true
 outputs:
   build_version: 
     description: "Build version from POM"
@@ -46,7 +49,7 @@ runs:
       id: op-load-repo-secrets
       uses: 1password/load-secrets-action@v2.0.0
       env:
-        OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+        OP_SERVICE_ACCOUNT_TOKEN: ${{ inputs.op_service_account_token }}
         NEXUSUSER: op://ajila_CICD/NEXUS/username
         NEXUSPWD: op://ajila_CICD/NEXUS/password
     
@@ -151,7 +154,7 @@ runs:
       if: always()
       uses: ajilach/notifications-ghaction@v1.4.1
       with:
-        op_service_account_token: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+        op_service_account_token: ${{ inputs.op_service_account_token }}
         slack_channel_id: ${{ inputs.slack_channel_id }}
         job_status: ${{ job.status }}
   
