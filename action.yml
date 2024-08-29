@@ -150,15 +150,15 @@ runs:
         settings-file: .m2/settings.xml
       if: inputs.enable_maven_dependency_check == 'true'
 
-    - name: Clean-up GH runner disk space
-      if: always()
-      uses: ajilach/actions-cleanup-ghaction@v1.2.0
+    # - name: Clean-up GH runner disk space
+    #   if: always()
+    #   uses: ajilach/actions-cleanup-ghaction@v1.2.0
 
-    - name: Notify job status
-      if: always()
-      uses: ajilach/notifications-ghaction@v1.4.1
-      with:
-        op_service_account_token: ${{ inputs.op_service_account_token }}
-        slack_channel_id: ${{ inputs.slack_channel_id }}
-        job_status: ${{ job.status }}
+    # - name: Notify job status
+    #   if: always()
+    #   uses: ajilach/notifications-ghaction@v1.4.1
+    #   with:
+    #     op_service_account_token: ${{ inputs.op_service_account_token }}
+    #     slack_channel_id: ${{ inputs.slack_channel_id }}
+    #     job_status: ${{ job.status }}
   
