@@ -132,7 +132,6 @@ runs:
         fi
         mvn --global-settings .m2/settings.xml --batch-mode -P$PROFILES clean deploy
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         ADDITIONAL_PROFILES: ${{ inputs.additional_profiles }}
 
     - name: Upload Artifact to GitHub
