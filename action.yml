@@ -148,7 +148,7 @@ runs:
       uses: advanced-security/maven-dependency-submission-action@v4.1.1
       with:
         settings-file: .m2/settings.xml
-      if: inputs.enable_maven_dependency_check == "true"
+      if: inputs.enable_maven_dependency_check == 'true'
 
     - name: Clean-up GH runner disk space
       if: always()
