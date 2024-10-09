@@ -117,6 +117,10 @@ runs:
           [
             "nexus"
           ]
+        plugin_groups: >
+          [
+            "com.google.cloud.tools"
+          ]
         output_file: .m2/settings.xml
 
     - name: Set output variables
@@ -143,16 +147,12 @@ runs:
       with:
         name: maven-artifacts
         path: "**/target/*.zip"
-
+    
     - name: Maven Dependency Tree Dependency Submission
       uses: advanced-security/maven-dependency-submission-action@v4.1.1
       with:
         settings-file: .m2/settings.xml
       if: inputs.enable_maven_dependency_check == 'true'
-
-    - name: Clean-up GH runner disk space
-      if: always()
-      uses: ajilach/actions-cleanup-ghaction@v1.2.0
 
     - name: Notify job status
       if: always()
