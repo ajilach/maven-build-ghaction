@@ -153,7 +153,7 @@ runs:
         SKIP_TESTS: ${{ inputs.skip_tests }}
 
     - name: Upload Artifact to GitHub
-      uses: actions/upload-artifact@v4.3.6
+      uses: actions/upload-artifact@v4.6.1
       with:
         name: maven-artifacts
         path: "**/target/*.zip"
