@@ -40,5 +40,6 @@ jobs:
           maven_version: '3.6.3'
           additional_profiles: 'jboss'
           slack_channel_id: CPX5X4B0P
+          # skip_tests: 'true' # skipping maven tests
 
 ```

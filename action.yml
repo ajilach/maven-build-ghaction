@@ -1,5 +1,5 @@
-name: 'Maven Builder'
-description: 'Build and upload artifacts with maven'
+name: "Maven Builder"
+description: "Build and upload artifacts with maven"
 inputs:
   java_version:
     description: Java runtime version
@@ -22,11 +22,15 @@ inputs:
     description: Enabling dependency check for maven when set to 'true'
     required: false
     default: "false"
+  skip_tests:
+    description: Skip Maven tests
+    required: false
+    default: "false"
 outputs:
-  build_version: 
+  build_version:
     description: "Build version from POM"
     value: ${{ steps.pom-vars.outputs.build_version }}
-  artefact_id: 
+  artefact_id:
     description: "Artifact id from POM"
     value: ${{ steps.pom-vars.outputs.artefact_id }}
   group_id:
@@ -34,21 +38,20 @@ outputs:
     value: ${{ steps.pom-vars.outputs.group_id }}
 runs:
   using: "composite"
-  
+
   steps:
-    
     - name: Set up JDK ${{ inputs.java_version }}
       uses: actions/setup-java@v4.2.2
       with:
         java-version: ${{ inputs.java_version }}
-        distribution: 'temurin'
+        distribution: "temurin"
         # cache: maven
-    
+
     - name: Set up Maven
       uses: stCarolas/setup-maven@v5
       with:
         maven-version: ${{ inputs.maven_version }}
-    
+
     - name: Load Repo Secrets
       id: op-load-repo-secrets
       uses: 1password/load-secrets-action@v2.0.0
@@ -56,7 +59,7 @@ runs:
         OP_SERVICE_ACCOUNT_TOKEN: ${{ inputs.op_service_account_token }}
         NEXUSUSER: op://ajila_CICD/NEXUS/username
         NEXUSPWD: op://ajila_CICD/NEXUS/password
-    
+
     - name: Prepare maven config file
       uses: whelk-io/maven-settings-xml-action@v22
       with:
@@ -129,7 +132,7 @@ runs:
       run: |
         echo "build_version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -Pnexus --global-settings .m2/settings.xml)" >> $GITHUB_OUTPUT
         echo "artefact_id=$(mvn help:evaluate -Dexpression=project.artifactId -q -DforceStdout -Pnexus --global-settings .m2/settings.xml)" >> $GITHUB_OUTPUT
-        echo "group_id=$(mvn help:evaluate -Dexpression=project.groupId -q -DforceStdout -Pnexus --global-settings .m2/settings.xml)" >> $GITHUB_OUTPUT 
+        echo "group_id=$(mvn help:evaluate -Dexpression=project.groupId -q -DforceStdout -Pnexus --global-settings .m2/settings.xml)" >> $GITHUB_OUTPUT
 
     - name: Build and upload to nexus
       shell: bash
@@ -138,16 +141,23 @@ runs:
         if [[ -n "$ADDITIONAL_PROFILES" ]]; then
           PROFILES="$PROFILES,$ADDITIONAL_PROFILES"
         fi
-        mvn --global-settings .m2/settings.xml --batch-mode -P$PROFILES clean deploy
+
+        MAVEN_OPTIONS=""
+        if [[ "$SKIP_TESTS" == "true" ]]; then
+          MAVEN_OPTIONS="-DskipTests"
+        fi
+
+        mvn --global-settings .m2/settings.xml --batch-mode $MAVEN_OPTIONS -P$PROFILES clean deploy
       env:
         ADDITIONAL_PROFILES: ${{ inputs.additional_profiles }}
+        SKIP_TESTS: ${{ inputs.skip_tests }}
 
     - name: Upload Artifact to GitHub
       uses: actions/upload-artifact@v4.3.6
       with:
         name: maven-artifacts
         path: "**/target/*.zip"
-    
+
     - name: Maven Dependency Tree Dependency Submission
       uses: advanced-security/maven-dependency-submission-action@v4.1.1
       with:
@@ -161,4 +171,3 @@ runs:
         op_service_account_token: ${{ inputs.op_service_account_token }}
         slack_channel_id: ${{ inputs.slack_channel_id }}
         job_status: ${{ job.status }}
-  
