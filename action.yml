@@ -174,8 +174,13 @@ runs:
       if: inputs.enable_maven_dependency_check == 'true'
 
     - name: Generate BOM
-      run: mvn -s .m2/settings.xml org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom
-      if: inputs.enable_owasp_dependency_track == 'true'
+      if: ${{ inputs.enable_owasp_dependency_track == 'true' }}
+      shell: bash
+      run: |
+        mvn -s .m2/settings.xml \
+          -DskipTests \
+          --no-transfer-progress \
+          org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom
 
     - name: Upload BOM to Dependency-Track
       env:
