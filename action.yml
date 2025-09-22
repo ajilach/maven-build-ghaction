@@ -26,6 +26,11 @@ inputs:
     description: Enabling owasp dependency track for maven when set to 'true'
     required: false
     default: "false"
+  DTRACK_REPO_NAME:
+    description: Repo name of the project
+    required: false
+    type: string
+    default: ""
   skip_tests:
     description: Skip Maven tests
     required: false
@@ -178,7 +183,7 @@ runs:
       env:
         DTRACK_URL: http://100.96.103.103:8080/
         DTRACK_API_KEY: ${{ secrets.DTRACK_API_KEY }}
-        DTRACK_REPO_NAME: ${{ secrets.DTRACK_REPO_NAME }}
+        DTRACK_REPO_NAME: ${{ inputs.DTRACK_REPO_NAME }}
       run: |
         curl -X POST "$DTRACK_URL/api/v1/bom" \
           -H "X-Api-Key: $DTRACK_API_KEY" \
