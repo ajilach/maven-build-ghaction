@@ -31,6 +31,11 @@ inputs:
     required: false
     type: string
     default: ""
+  DTRACK_API_KEY:
+    description: API Key for OWASP Dependency-Track
+    required: false
+    type: string
+    default: ""
   skip_tests:
     description: Skip Maven tests
     required: false
@@ -182,7 +187,7 @@ runs:
     - name: Upload BOM to Dependency-Track
       env:
         DTRACK_URL: http://100.96.103.103:8080/
-        DTRACK_API_KEY: ${{ secrets.DTRACK_API_KEY }}
+        DTRACK_API_KEY: ${{ inputs.DTRACK_API_KEY }}
         DTRACK_REPO_NAME: ${{ inputs.DTRACK_REPO_NAME }}
       run: |
         curl -X POST "$DTRACK_URL/api/v1/bom" \
