@@ -31,9 +31,6 @@ inputs:
     required: false
     type: string
     default: ""
-  DTRACK_API_KEY:              # NEW as input
-    description: API Key for OWASP Dependency-Track
-    required: false
   skip_tests:
     description: Skip Maven tests
     required: false
@@ -70,6 +67,8 @@ runs:
         OP_SERVICE_ACCOUNT_TOKEN: ${{ inputs.op_service_account_token }}
         NEXUSUSER: op://ajila_CICD/NEXUS/username
         NEXUSPWD: op://ajila_CICD/NEXUS/password
+        DTRACK_IP: op://ajila_CICD/OWASP_DTRACK/ip
+        DTRACK_API_KEY: op://ajila_CICD/OWASP_DTRACK/api_key
 
     - name: Prepare maven config file
       uses: whelk-io/maven-settings-xml-action@v22
@@ -186,8 +185,8 @@ runs:
 
     - name: Upload BOM to Dependency-Track
       env:
-        DTRACK_URL: http://100.96.103.103:8080/
-        DTRACK_API_KEY: ${{ inputs.DTRACK_API_KEY }}   # FIXED
+        DTRACK_URL: ${{ env.DTRACK_IP }}
+        DTRACK_API_KEY: ${{ env.DTRACK_API_KEY }}
         DTRACK_REPO_NAME: ${{ inputs.DTRACK_REPO_NAME }}
       shell: bash          # ADDED
       run: |
