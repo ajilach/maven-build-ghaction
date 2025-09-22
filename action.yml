@@ -192,7 +192,7 @@ runs:
       shell: bash          # ADDED
       run: |
         curl -X POST "$DTRACK_URL/api/v1/bom" \
-          -H "X-Api-Key: $DTRACK_API_KEY" \
+          -H "X-Api-Key:$DTRACK_API_KEY" \
           -H "Content-Type: multipart/form-data" \
           -F "projectName=$DTRACK_REPO_NAME" \
           -F "autoCreate=true" \
