@@ -174,9 +174,7 @@ runs:
       if: inputs.enable_maven_dependency_check == 'true'
 
     - name: Generate BOM
-      run: mvn org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom
-      with:
-        settings-file: .m2/settings.xml
+      run: mvn -s .m2/settings.xml org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom
       if: inputs.enable_owasp_dependency_track == 'true'
 
     - name: Upload BOM to Dependency-Track
@@ -188,7 +186,7 @@ runs:
         curl -X POST "$DTRACK_URL/api/v1/bom" \
           -H "X-Api-Key: $DTRACK_API_KEY" \
           -H "Content-Type: multipart/form-data" \
-          -F "projectName= $DTRACK_REPO_NAME" \
+          -F "projectName=$DTRACK_REPO_NAME" \
           -F "autoCreate=true" \
           -F "bom=@target/bom.xml"
       if: inputs.enable_owasp_dependency_track == 'true'
