@@ -176,7 +176,7 @@ runs:
 
     - name: Generate BOM
       if: ${{ inputs.enable_owasp_dependency_track == 'true' }}
-      shell: bash          # ADDED
+      shell: bash
       run: |
         mvn -s .m2/settings.xml \
           -DskipTests \
@@ -184,19 +184,21 @@ runs:
           org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom
 
     - name: Upload BOM to Dependency-Track
+      if: inputs.enable_owasp_dependency_track == 'true'
+      shell: bash
       env:
         DTRACK_URL: ${{ env.DTRACK_IP }}
         DTRACK_API_KEY: ${{ env.DTRACK_API_KEY }}
         DTRACK_REPO_NAME: ${{ inputs.DTRACK_REPO_NAME }}
-      shell: bash          # ADDED
+        BUILD_VERSION: ${{ steps.pom-vars.outputs.build_version }}
       run: |
         curl -X POST "$DTRACK_URL/api/v1/bom" \
-          -H "X-Api-Key:$DTRACK_API_KEY" \
-          -H "Content-Type: multipart/form-data" \
-          -F "projectName=$DTRACK_REPO_NAME" \
-          -F "autoCreate=true" \
-          -F "bom=@target/bom.xml"
-      if: inputs.enable_owasp_dependency_track == 'true'
+            -H "X-Api-Key: $DTRACK_API_KEY" \
+            -H "Content-Type: multipart/form-data" \
+            -F "projectName=$DTRACK_REPO_NAME" \
+            -F "projectVersion=$BUILD_VERSION" \
+            -F "autoCreate=true" \
+            -F "bom=@target/bom.xml"
 
     - name: Notify job status
       if: always()
