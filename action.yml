@@ -31,6 +31,11 @@ inputs:
     required: false
     type: string
     default: ""
+  DTRACK_API_KEY:
+    description: API Key for OWASP Dependency-Track
+    required: false
+    type: string
+    default: ""
   skip_tests:
     description: Skip Maven tests
     required: false
