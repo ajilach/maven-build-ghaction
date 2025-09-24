@@ -190,15 +190,13 @@ runs:
         DTRACK_URL: ${{ env.DTRACK_IP }}
         DTRACK_API_KEY: ${{ env.DTRACK_API_KEY }}
         DTRACK_REPO_NAME: ${{ inputs.DTRACK_REPO_NAME }}
-        BUILD_VERSION: ${{ steps.pom-vars.outputs.build_version }}
       run: |
         curl -X POST "$DTRACK_URL/api/v1/bom" \
-            -H "X-Api-Key: $DTRACK_API_KEY" \
-            -H "Content-Type: multipart/form-data" \
-            -F "projectName=$DTRACK_REPO_NAME" \
-            -F "projectVersion=$BUILD_VERSION" \
-            -F "autoCreate=true" \
-            -F "bom=@target/bom.xml"
+          -H "X-Api-Key:$DTRACK_API_KEY" \
+          -H "Content-Type: multipart/form-data" \
+          -F "project=$DTRACK_REPO_NAME" \
+          -F "autoCreate=true" \
+          -F "bom=@target/bom.xml"
 
     - name: Notify job status
       if: always()
