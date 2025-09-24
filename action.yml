@@ -167,11 +167,15 @@ runs:
         ADDITIONAL_PROFILES: ${{ inputs.additional_profiles }}
         SKIP_TESTS: ${{ inputs.skip_tests }}
 
-    - name: Upload Artifact to GitHub
+    - name: Upload Artifacts to Github
       uses: actions/upload-artifact@v4.6.1
       with:
         name: maven-artifacts
-        path: "**/target/*.zip"
+        path: |
+          **/target/*.jar
+          **/target/*.war
+          **/target/*.zip
+        if-no-files-found: warn
 
     - name: Maven Dependency Tree Dependency Submission
       uses: advanced-security/maven-dependency-submission-action@v4.1.1
