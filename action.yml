@@ -67,7 +67,7 @@ runs:
 
     - name: Load Repo Secrets
       id: op-load-repo-secrets
-      uses: 1password/load-secrets-action@v2.0.0
+      uses: 1password/load-secrets-action@v3.0.0
       env:
         OP_SERVICE_ACCOUNT_TOKEN: ${{ inputs.op_service_account_token }}
         NEXUSUSER: op://ajila_CICD/NEXUS/username
