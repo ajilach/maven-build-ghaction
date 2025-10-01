@@ -190,11 +190,8 @@ runs:
         mvn -s .m2/settings.xml \
           -DskipTests \
           --no-transfer-progress \
-          org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom
-          -Dcyclonedx.includeCompileScope=true \
-          -Dcyclonedx.includeRuntimeScope=true \
-          -Dcyclonedx.includeTransitiveDependencies=true \
-          -Dcyclonedx.includeTestScope=false
+          org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom \
+          -Dcyclonedx.includeCompileScope=true -Dcyclonedx.includeRuntimeScope=true -Dcyclonedx.includeTransitiveDependencies=true -Dcyclonedx.includeTestScope=false
 
     - name: Upload BOM to Dependency-Track
       if: inputs.enable_owasp_dependency_track == 'true'
