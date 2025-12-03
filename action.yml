@@ -40,12 +40,16 @@ inputs:
     description: Skip Maven tests
     required: false
     default: "false"
-  ENABLE_SONARQUBE:
+  enable_sonarqube:
     description: Enable SonarQube analysis when set to 'true'
     required: false
     default: "false"
   SONAR_PROJECT_KEY:
     description: SonarQube project key
+    required: false
+    default: ""
+  sonar_branch_name:
+    description: Optional SonarQube branch name (if empty, it will be resolved from the GitHub context)
     required: false
     default: ""
 outputs:
@@ -231,12 +235,33 @@ runs:
       env:
         SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
         SONAR_PROJECT_KEY: ${{ inputs.sonar_project_key }}
+        INPUT_SONAR_BRANCH_NAME: ${{ inputs.sonar_branch_name }}
+        GITHUB_BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
       run: |
-        mvn -s .m2/settings.xml \
-          --batch-mode \
-          org.sonarsource.scanner.maven:sonar-maven-plugin:5.2.0.4988:sonar \
-          -Dsonar.projectKey=$SONAR_PROJECT_KEY \
-          -Dsonar.token=$SONAR_TOKEN
+        # Resolve the effective branch name for SonarCloud
+        SONAR_BRANCH_NAME="$INPUT_SONAR_BRANCH_NAME"
+        if [[ -z "$SONAR_BRANCH_NAME" ]]; then
+          SONAR_BRANCH_NAME="$GITHUB_BRANCH_NAME"
+        fi
+
+        echo "Detected branch for Sonar analysis: '$SONAR_BRANCH_NAME'"
+
+        if [[ "$SONAR_BRANCH_NAME" == "main" || "$SONAR_BRANCH_NAME" == "master" || -z "$SONAR_BRANCH_NAME" ]]; then
+          echo "Running Sonar analysis on main branch (no sonar.branch.name parameter)."
+          mvn -s .m2/settings.xml \
+            --batch-mode \
+            org.sonarsource.scanner.maven:sonar-maven-plugin:5.2.0.4988:sonar \
+            -Dsonar.projectKey="$SONAR_PROJECT_KEY" \
+            -Dsonar.token="$SONAR_TOKEN"
+        else
+          echo "Running Sonar analysis on short-lived branch: $SONAR_BRANCH_NAME"
+          mvn -s .m2/settings.xml \
+            --batch-mode \
+            org.sonarsource.scanner.maven:sonar-maven-plugin:5.2.0.4988:sonar \
+            -Dsonar.projectKey="$SONAR_PROJECT_KEY" \
+            -Dsonar.token="$SONAR_TOKEN" \
+            -Dsonar.branch.name="$SONAR_BRANCH_NAME"
+        fi
 
     - name: Notify job status
       if: always()
