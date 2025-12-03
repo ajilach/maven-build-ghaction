@@ -40,6 +40,14 @@ inputs:
     description: Skip Maven tests
     required: false
     default: "false"
+  ENABLE_SONARQUBE:
+    description: Enable SonarQube analysis when set to 'true'
+    required: false
+    default: "false"
+  SONAR_PROJECT_KEY:
+    description: SonarQube project key
+    required: false
+    default: ""
 outputs:
   build_version:
     description: "Build version from POM"
@@ -74,6 +82,7 @@ runs:
         NEXUSPWD: op://ajila_CICD/NEXUS/password
         DTRACK_IP: op://ajila_CICD/OWASP_DTRACK/ip
         DTRACK_API_KEY: op://ajila_CICD/OWASP_DTRACK/api_key
+        SONAR_TOKEN: op://ajila_CICD/SONARCLOUD_CICD_SERVICE_TOKEN/token_secret
 
     - name: Prepare maven config file
       uses: whelk-io/maven-settings-xml-action@v22
@@ -207,6 +216,27 @@ runs:
           -F "project=$DTRACK_REPO_OID" \
           -F "autoCreate=true" \
           -F "bom=@target/bom.xml"
+
+    - name: Cache SonarQube packages
+      if: inputs.enable_sonarqube == 'true'
+      uses: actions/cache@v4
+      with:
+        path: ~/.sonar/cache
+        key: ${{ runner.os }}-sonar
+        restore-keys: ${{ runner.os }}-sonar
+
+    - name: Run SonarQube analysis
+      if: inputs.enable_sonarqube == 'true'
+      shell: bash
+      env:
+        SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
+        SONAR_PROJECT_KEY: ${{ inputs.sonar_project_key }}
+      run: |
+        mvn -s .m2/settings.xml \
+          --batch-mode \
+          org.sonarsource.scanner.maven:sonar-maven-plugin:5.2.0.4988:sonar \
+          -Dsonar.projectKey=$SONAR_PROJECT_KEY \
+          -Dsonar.token=$SONAR_TOKEN
 
     - name: Notify job status
       if: always()
