@@ -1,5 +1,6 @@
 name: "Maven Builder"
 description: "Build and upload artifacts with maven"
+
 inputs:
   java_version:
     description: Java runtime version
@@ -52,6 +53,7 @@ inputs:
     description: Optional SonarQube branch name (if empty, it will be resolved from the GitHub context)
     required: false
     default: ""
+
 outputs:
   build_version:
     description: "Build version from POM"
@@ -62,6 +64,7 @@ outputs:
   group_id:
     description: "Group id from POM"
     value: ${{ steps.pom-vars.outputs.group_id }}
+
 runs:
   using: "composite"
 
@@ -234,33 +237,52 @@ runs:
       shell: bash
       env:
         SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
-        SONAR_PROJECT_KEY: ${{ inputs.sonar_project_key }}
+        SONAR_PROJECT_KEY: ${{ inputs.SONAR_PROJECT_KEY }}
         INPUT_SONAR_BRANCH_NAME: ${{ inputs.sonar_branch_name }}
         GITHUB_BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+        GITHUB_EVENT_NAME: ${{ github.event_name }}
+        GITHUB_PR_NUMBER: ${{ github.event.pull_request.number || '' }}
+        GITHUB_PR_BRANCH: ${{ github.head_ref || '' }}
+        GITHUB_PR_BASE: ${{ github.base_ref || '' }}
       run: |
-        # Resolve the effective branch name for SonarCloud
-        SONAR_BRANCH_NAME="$INPUT_SONAR_BRANCH_NAME"
-        if [[ -z "$SONAR_BRANCH_NAME" ]]; then
-          SONAR_BRANCH_NAME="$GITHUB_BRANCH_NAME"
-        fi
+        echo "GitHub event: $GITHUB_EVENT_NAME"
 
-        echo "Detected branch for Sonar analysis: '$SONAR_BRANCH_NAME'"
-
-        if [[ "$SONAR_BRANCH_NAME" == "main" || "$SONAR_BRANCH_NAME" == "master" || -z "$SONAR_BRANCH_NAME" ]]; then
-          echo "Running Sonar analysis on main branch (no sonar.branch.name parameter)."
-          mvn -s .m2/settings.xml \
-            --batch-mode \
-            org.sonarsource.scanner.maven:sonar-maven-plugin:5.2.0.4988:sonar \
-            -Dsonar.projectKey="$SONAR_PROJECT_KEY" \
-            -Dsonar.token="$SONAR_TOKEN"
-        else
-          echo "Running Sonar analysis on short-lived branch: $SONAR_BRANCH_NAME"
+        # If this is a pull request, run PR-focused analysis so that SonarCloud decorates the PR correctly
+        if [[ "$GITHUB_EVENT_NAME" == "pull_request" && -n "$GITHUB_PR_NUMBER" ]]; then
+          echo "Running Sonar analysis for Pull Request #$GITHUB_PR_NUMBER"
           mvn -s .m2/settings.xml \
             --batch-mode \
             org.sonarsource.scanner.maven:sonar-maven-plugin:5.2.0.4988:sonar \
             -Dsonar.projectKey="$SONAR_PROJECT_KEY" \
             -Dsonar.token="$SONAR_TOKEN" \
-            -Dsonar.branch.name="$SONAR_BRANCH_NAME"
+            -Dsonar.pullrequest.key="$GITHUB_PR_NUMBER" \
+            -Dsonar.pullrequest.branch="$GITHUB_PR_BRANCH" \
+            -Dsonar.pullrequest.base="$GITHUB_PR_BASE"
+        else
+          # Fallback: normal branch analysis for push events and non-PR runs
+          SONAR_BRANCH_NAME="$INPUT_SONAR_BRANCH_NAME"
+          if [[ -z "$SONAR_BRANCH_NAME" ]]; then
+            SONAR_BRANCH_NAME="$GITHUB_BRANCH_NAME"
+          fi
+
+          echo "Resolved Sonar branch name: '$SONAR_BRANCH_NAME'"
+
+          if [[ "$SONAR_BRANCH_NAME" == "main" || "$SONAR_BRANCH_NAME" == "master" || -z "$SONAR_BRANCH_NAME" ]]; then
+            echo "Running Sonar analysis on main branch (no sonar.branch.name parameter)."
+            mvn -s .m2/settings.xml \
+              --batch-mode \
+              org.sonarsource.scanner.maven:sonar-maven-plugin:5.2.0.4988:sonar \
+              -Dsonar.projectKey="$SONAR_PROJECT_KEY" \
+              -Dsonar.token="$SONAR_TOKEN"
+          else
+            echo "Running Sonar analysis on short-lived branch: $SONAR_BRANCH_NAME"
+            mvn -s .m2/settings.xml \
+              --batch-mode \
+              org.sonarsource.scanner.maven:sonar-maven-plugin:5.2.0.4988:sonar \
+              -Dsonar.projectKey="$SONAR_PROJECT_KEY" \
+              -Dsonar.token="$SONAR_TOKEN" \
+              -Dsonar.branch.name="$SONAR_BRANCH_NAME"
+          fi
         fi
 
     - name: Notify job status
