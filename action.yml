@@ -224,14 +224,6 @@ runs:
           -F "autoCreate=true" \
           -F "bom=@target/bom.xml"
 
-    - name: Cache SonarQube packages
-      if: inputs.enable_sonarqube == 'true'
-      uses: actions/cache@v4
-      with:
-        path: ~/.sonar/cache
-        key: ${{ runner.os }}-sonar
-        restore-keys: ${{ runner.os }}-sonar
-
     - name: Run SonarQube analysis
       if: inputs.enable_sonarqube == 'true'
       shell: bash
