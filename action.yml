@@ -87,8 +87,8 @@ runs:
         OP_SERVICE_ACCOUNT_TOKEN: ${{ inputs.op_service_account_token }}
         NEXUSUSER: op://ajila_CICD/NEXUS/username
         NEXUSPWD: op://ajila_CICD/NEXUS/password
-        DTRACK_IP: op://ajila_CICD/OWASP_DTRACK/ip
-        DTRACK_API_KEY: op://ajila_CICD/OWASP_DTRACK/api_key
+        DTRACK_IP: op://ajila_CICD/OWASP_DTRACK/ip_new # remove *_new suffix after decommissioning of the old dependency-track VM
+        DTRACK_API_KEY: op://ajila_CICD/OWASP_DTRACK/api_key_new # remove *_new suffix after decommissioning of the old dependency-track VM
         SONAR_TOKEN: op://ajila_CICD/SONARCLOUD_CICD_SERVICE_TOKEN/token_secret
 
     - name: Prepare maven config file
@@ -217,11 +217,21 @@ runs:
         DTRACK_API_KEY: ${{ env.DTRACK_API_KEY }}
         DTRACK_REPO_OID: ${{ inputs.DTRACK_REPO_OID }}
       run: |
-        curl -X POST "$DTRACK_URL/api/v1/bom" \
+        HOST="${DTRACK_URL#https://}"; HOST="${HOST#http://}"; HOST="${HOST%%/*}"
+        RESOLVE_ARGS=()
+        IP=$(tailscale ip -4 "$HOST" 2>/dev/null || tailscale ip -4 "${HOST%%.*}" 2>/dev/null || true)
+        if [ -n "$IP" ]; then
+          RESOLVE_ARGS=(--resolve "${HOST}:443:${IP}")
+          echo "Pinned ${HOST} -> ${IP} via tailscale"
+        elif [[ "$HOST" == *.ts.net ]]; then
+          echo "ERROR: ${HOST} is a tailnet host but the local tailscale could not resolve it (tailscaled running? device online?)" >&2
+          exit 1
+        fi
+        echo "Uploading BOM for project OID: $DTRACK_REPO_OID to $DTRACK_URL"
+        curl -sS --fail-with-body "${RESOLVE_ARGS[@]}" -X POST "$DTRACK_URL/api/v1/bom" \
           -H "X-Api-Key:$DTRACK_API_KEY" \
           -H "Content-Type: multipart/form-data" \
           -F "project=$DTRACK_REPO_OID" \
-          -F "autoCreate=true" \
           -F "bom=@target/bom.xml"
 
     - name: Run SonarQube analysis
