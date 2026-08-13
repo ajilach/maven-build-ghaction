@@ -12,6 +12,9 @@ This action runs `mvn clean deploy` for the currently checked out sources. It us
 
 Make sure to have checked out the sources before triggering this step. See `Usage` below.
 
+When SonarQube analysis is enabled (`enable_sonarqube: 'true'`), check out with `fetch-depth: 0`.
+A shallow clone has no git blame data, which makes SonarQube's new-code attribution unreliable.
+
 ## Usage
 
 Here is how you can call this action:
@@ -31,6 +34,8 @@ jobs:
         
       - name: Checkout source code
         uses: actions/checkout@v4.1.7
+        with:
+          fetch-depth: 0
 
       - name: Building the maven artifacts
         id: builder

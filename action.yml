@@ -269,7 +269,19 @@ runs:
 
           echo "Resolved Sonar branch name: '$SONAR_BRANCH_NAME'"
 
-          if [[ "$SONAR_BRANCH_NAME" == "main" || "$SONAR_BRANCH_NAME" == "master" || -z "$SONAR_BRANCH_NAME" ]]; then
+          case "$SONAR_BRANCH_NAME" in
+            main|master|"")
+              BRANCH_KIND="main"
+              ;;
+            develop|release/*|hotfix/*)
+              BRANCH_KIND="long-lived"
+              ;;
+            *)
+              BRANCH_KIND="short-lived"
+              ;;
+          esac
+
+          if [[ "$BRANCH_KIND" == "main" ]]; then
             echo "Running Sonar analysis on main branch (no sonar.branch.name parameter)."
             mvn -s .m2/settings.xml \
               --batch-mode \
@@ -277,7 +289,7 @@ runs:
               -Dsonar.projectKey="$SONAR_PROJECT_KEY" \
               -Dsonar.token="$SONAR_TOKEN"
           else
-            echo "Running Sonar analysis on short-lived branch: $SONAR_BRANCH_NAME"
+            echo "Running Sonar analysis on $BRANCH_KIND branch: $SONAR_BRANCH_NAME"
             mvn -s .m2/settings.xml \
               --batch-mode \
               org.sonarsource.scanner.maven:sonar-maven-plugin:5.2.0.4988:sonar \
