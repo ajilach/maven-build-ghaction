@@ -131,6 +131,11 @@ runs:
               "id": "AjilaReleases",
               "username": "${{ env.NEXUSUSER }}",
               "password": "${{ env.NEXUSPWD }}"
+            },
+            {
+              "id": "nexus",
+              "username": "${{ env.NEXUSUSER }}",
+              "password": "${{ env.NEXUSPWD }}"
             }
           ]
         mirrors: >
